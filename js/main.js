@@ -7,7 +7,7 @@ const util = {
 	hideActiveDropMenu: function(menuDropLinkArray) {
 		if ( !leftMenu.classList.contains('.openMenu') ) {
 			menuDropLinkArray.forEach( (item) => {
-				if ( !item.classList.contains('open) ) {
+				if ( !item.classList.contains('open') ) {
 					item.classList.remove('active');
 				}
 			})
