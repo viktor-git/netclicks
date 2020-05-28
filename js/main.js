@@ -15,6 +15,10 @@
 	const modalLink = document.querySelector('.modal__link');
 	const searchForm= document.querySelector('.search__form');
 	const searchFormInput = document.querySelector('.search__form-input');
+	const searchHeader = document.querySelector('.tv-shows__head'); 
+	const preloader = document.querySelector('.preloader'); 
+	const loading  = document.createElement('div');
+	loading.classList.add('loading');
 
 	const imgUrl = 'https://image.tmdb.org/t/p/w185_and_h278_bestv2';
 	const apiKey = '5862ea2a6a449f1430efcb47f5e3dec4';
@@ -36,10 +40,6 @@
 			elem.setAttribute('src', newSource);
 		}
 	};
-
-	const loading  = document.createElement('div');
-	loading.classList.add('loading');
-
 
 	menuHamburger.addEventListener('click', () => {
 		leftMenu.classList.toggle('openMenu');
@@ -91,11 +91,20 @@
 
 
 		if ( card ) {
+			preloader.style.display = 'block';
+
 			new bdRequest()
 			.getTvDetails(card.id)
 			.then( (response) => {
 				console.log(response);
-				modalCardImg.src = imgUrl + response.poster_path;
+
+				if ( response.poster_path ) {
+					modalCardImg.src = imgUrl + response.poster_path;
+				} else {
+					modalCardImg.src = 'img/no-poster.jpg';
+				}
+				
+				modalCardImg.alt = response.name;
 				modalTitle.textContent = response.name;
 				genresList.innerHTML = '';
 				for (let item of response.genres) {
@@ -107,10 +116,12 @@
 				modalLink.href = response.homepage;
 			});
 
+			preloader.style.display = 'none';
 			document.body.style.overflow = 'hidden';
 			modalForm.classList.remove('hide');
 			modalForm.style.backgroundColor = 'transparent';
 		}
+
 		modalForm.addEventListener('click', modalCloseHandler);
 		
 	});
@@ -124,6 +135,7 @@
 		modalForm.removeEventListener('click', modalCloseHandler);
 	};
 	
+
 	const createCard = function (serverDataItem) {
 		
 		const {
@@ -154,8 +166,22 @@
 		return card;
 	};
 
+	const checkSearchRequest = function(response, searchRequest) {
+		let uppercase = searchRequest.charAt(0).toUpperCase() + searchRequest.slice(1);
+		if ( !response.total_results ) {
+			searchHeader.textContent = `По вашему запросу «${uppercase}» ничего не найдено`;
+		} else if ( !searchRequest ) {
+			searchHeader.textContent = ``;
+		} else {
+			searchHeader.textContent = `Результаты поиска по запросу «${uppercase}». Найдено ${response.total_results} ТВ-Шоу`;
+		}
+		searchFormInput.value = '';
+	};
+	
 	const renderCard = (response) => {
-		console.log(response);
+		console.dir(response);
+		let seacrhRequestText = searchFormInput.value.trim();
+		checkSearchRequest(response, seacrhRequestText);
 		
 		const cardListFragment = new DocumentFragment();
 		tvShowList.innerHTML = '';
@@ -168,6 +194,7 @@
 		tvShowList.append(cardListFragment);
 
 	};
+
 	const bdRequest = class {
 		getData = async (url) => {
 			const res = await fetch(url);
@@ -195,7 +222,7 @@
 			return this.getData(`https://api.themoviedb.org/3/tv/${id}?api_key=${apiKey}&language=ru-RU`);
 		}
 	}
-	
+
 	searchForm.addEventListener('submit', (evt) => {
 		evt.preventDefault();
 		let value = searchFormInput.value.trim();
@@ -203,9 +230,9 @@
 			tvShowList.append(loading);
 			new bdRequest().getSearchResult(value).then(renderCard);
 		}
-		searchFormInput.value = '';
 	});
-
+	
+	tvShowList.append(loading);
 	new bdRequest().getTestData().then(renderCard);
 
 
