@@ -63,6 +63,27 @@
 			leftMenu.classList.add('openMenu');
 			menuHamburger.classList.add('open');
 		}
+		// Дописать вывод названия в заголовке
+		if (target.closest('#top-rated')) {
+			new bdRequest().getTopRated().then((response) => renderCard(response, target));
+		}
+
+		if (target.closest('#popular')) {
+			new bdRequest().getPopular().then((response) => renderCard(response, target));
+		}
+
+		if (target.closest('#week')) {
+			new bdRequest().getWeek().then((response) => renderCard(response, target));
+		}
+
+		if (target.closest('#today')) {
+			new bdRequest().getToday().then((response) => renderCard(response, target));
+		}
+
+		if (target.closest('#search')) {
+			searchFormInput.focus();
+		}
+
 	});
 
 	tvShows.addEventListener('mouseover', (evt) => {
@@ -100,11 +121,11 @@
 
 				if ( response.poster_path ) {
 					modalCardImg.src = imgUrl + response.poster_path;
+					modalCardImg.alt = response.name;
 				} else {
 					modalCardImg.src = 'img/no-poster.jpg';
 				}
 				
-				modalCardImg.alt = response.name;
 				modalTitle.textContent = response.name;
 				genresList.innerHTML = '';
 				for (let item of response.genres) {
@@ -114,9 +135,10 @@
 				rating.textContent = response.vote_average;
 				description.textContent = response.overview;
 				modalLink.href = response.homepage;
+			}).finally( () => {
+				preloader.classList.add('visually-hidden');
 			});
 
-			preloader.style.display = 'none';
 			document.body.style.overflow = 'hidden';
 			modalForm.classList.remove('hide');
 			modalForm.style.backgroundColor = 'transparent';
@@ -170,12 +192,16 @@
 		let uppercase = searchRequest.charAt(0).toUpperCase() + searchRequest.slice(1);
 		if ( !response.total_results ) {
 			searchHeader.textContent = `По вашему запросу «${uppercase}» ничего не найдено`;
+			return false;
 		} else if ( !searchRequest ) {
 			searchHeader.textContent = ``;
+			return false;
 		} else {
 			searchHeader.textContent = `Результаты поиска по запросу «${uppercase}». Найдено ${response.total_results} ТВ-Шоу`;
+			return false;
 		}
 		searchFormInput.value = '';
+		return true;
 	};
 	
 	const renderCard = (response) => {
@@ -221,8 +247,31 @@
 		getTvDetails = (id) => {
 			return this.getData(`https://api.themoviedb.org/3/tv/${id}?api_key=${apiKey}&language=ru-RU`);
 		}
+
+		getTopRated = () => {
+			return this.getData(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&language=ru-RU`);
+		}
+
+		getPopular = () => {
+			return this.getData(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&language=ru-RU`);
+		}
+
+		getToday = () => {
+			return this.getData(`https://api.themoviedb.org/3/tv/airing_today?api_key=${apiKey}&language=ru-RU`);
+		}
+
+		getWeek = () => {
+			return this.getData(`https://api.themoviedb.org/3/tv/on_the_air?api_key=${apiKey}&language=ru-RU`);
+		}
+
+		// Не работает https://developers.themoviedb.org/3/tv/get-latest-tv
+		getLatest = () => {
+			return this.getData(`https://api.themoviedb.org/3/tv/latest?api_key=${apiKey}&language=en-En`);
+		}
+
 	}
 
+	//Сделать передачу value в then
 	searchForm.addEventListener('submit', (evt) => {
 		evt.preventDefault();
 		let value = searchFormInput.value.trim();
@@ -231,9 +280,9 @@
 			new bdRequest().getSearchResult(value).then(renderCard);
 		}
 	});
-	
+
 	tvShowList.append(loading);
-	new bdRequest().getTestData().then(renderCard);
+	new bdRequest().getWeek().then(renderCard);
 
 
 }());
