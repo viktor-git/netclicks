@@ -1203,3 +1203,14 @@ div:after {
   height: 1px;
   margin: -1px;
 }
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.pagination__link {
+    margin-right: 10px;
+    padding: 5px; 
+}

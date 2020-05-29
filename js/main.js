@@ -17,8 +17,11 @@
 	const searchFormInput = document.querySelector('.search__form-input');
 	const searchHeader = document.querySelector('.tv-shows__head'); 
 	const preloader = document.querySelector('.preloader'); 
+
 	const loading  = document.createElement('div');
 	loading.classList.add('loading');
+
+	const paginationList = document.querySelector('.pagination');
 
 	const imgUrl = 'https://image.tmdb.org/t/p/w185_and_h278_bestv2';
 	const apiKey = '5862ea2a6a449f1430efcb47f5e3dec4';
@@ -65,19 +68,19 @@
 		}
 		// Дописать вывод названия в заголовке
 		if (target.closest('#top-rated')) {
-			new bdRequest().getTopRated().then((response) => renderCard(response, target));
+			new bdRequest().getTopRated().then((response) => renderCard(response));
 		}
 
 		if (target.closest('#popular')) {
-			new bdRequest().getPopular().then((response) => renderCard(response, target));
+			new bdRequest().getPopular().then((response) => renderCard(response));
 		}
 
 		if (target.closest('#week')) {
-			new bdRequest().getWeek().then((response) => renderCard(response, target));
+			new bdRequest().getWeek().then((response) => renderCard(response));
 		}
 
 		if (target.closest('#today')) {
-			new bdRequest().getToday().then((response) => renderCard(response, target));
+			new bdRequest().getToday().then((response) => renderCard(response));
 		}
 
 		if (target.closest('#search')) {
@@ -204,10 +207,14 @@
 		return true;
 	};
 	
-	const renderCard = (response) => {
-		console.dir(response);
-		let seacrhRequestText = searchFormInput.value.trim();
-		checkSearchRequest(response, seacrhRequestText);
+	const renderCard = (response, value) => {
+		console.log(response, value);
+		tvShowList.append(loading);
+		
+		if (value) {
+			console.log(value, 123);
+			checkSearchRequest(response, value);
+		}
 		
 		const cardListFragment = new DocumentFragment();
 		tvShowList.innerHTML = '';
@@ -219,10 +226,26 @@
 		loading.remove();
 		tvShowList.append(cardListFragment);
 
+		// Вынести в функцию
+		paginationList.innerHTML = '';
+		if ( response.total_pages > 1) {
+			for ( let i = 1; i <= response.total_pages; i++) {
+				paginationList.innerHTML += `<li><a href="#"class="pagination__link">${i}</a></li>`;
+			}
+		}
+
 	};
 
+	let currentAPIRequest = '';
 	const bdRequest = class {
+
+		constructor() {
+			this.server = 'https://api.themoviedb.org/3/';
+			this.temp = '';
+		}
+
 		getData = async (url) => {
+			console.log(url);
 			const res = await fetch(url);
 			if ( res.ok) {
 				return res.json();
@@ -232,6 +255,10 @@
 			
 		};
 
+		checkRequest = (page) => {
+			return (page === undefined) ? 1 : page;
+		}
+
 		getTestData = async () => {
 			return await this.getData('test.json');
 		};
@@ -240,46 +267,93 @@
 			return await this.getData('card.json');
 		};
 
-		getSearchResult = (query) => {
-			return this.getData(`https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&query=${query}&language=ru-RU`);
+		getSearchResult = (query, page) => {
+			page = this.checkRequest(page);
+			this.temp = `${this.server}search/tv?api_key=${apiKey}&query=${query}&language=ru-RU&page=${page}`;
+			currentAPIRequest = this.temp;
+			return this.getData(this.temp);
 		}
 
 		getTvDetails = (id) => {
-			return this.getData(`https://api.themoviedb.org/3/tv/${id}?api_key=${apiKey}&language=ru-RU`);
+			page = this.checkRequest(page);
+			this.temp = `${this.server}tv/${id}?api_key=${apiKey}&language=ru-RU`;
+			currentAPIRequest = this.temp;
+			return this.getData(this.temp);
 		}
 
-		getTopRated = () => {
-			return this.getData(`https://api.themoviedb.org/3/tv/top_rated?api_key=${apiKey}&language=ru-RU`);
+		getTopRated = (page) => {
+			page = this.checkRequest(page);
+			this.temp = `${this.server}tv/top_rated?api_key=${apiKey}&language=ru-RU&page=${page}`;
+			currentAPIRequest = this.temp;
+			return this.getData(this.temp);
 		}
 
-		getPopular = () => {
-			return this.getData(`https://api.themoviedb.org/3/tv/popular?api_key=${apiKey}&language=ru-RU`);
+		getPopular = (page) => {
+			page = this.checkRequest(page);
+			this.temp = `${this.server}tv/popular?api_key=${apiKey}&language=ru-RU&page=${page}`;
+			currentAPIRequest = this.temp;
+			return this.getData(this.temp);
 		}
 
-		getToday = () => {
-			return this.getData(`https://api.themoviedb.org/3/tv/airing_today?api_key=${apiKey}&language=ru-RU`);
+		getToday = (page) => {
+			page = this.checkRequest(page);
+			this.temp = `${this.server}tv/airing_today?api_key=${apiKey}&language=ru-RU&page=${page}`;
+			currentAPIRequest = this.temp;
+			return this.getData(this.temp);
 		}
 
-		getWeek = () => {
-			return this.getData(`https://api.themoviedb.org/3/tv/on_the_air?api_key=${apiKey}&language=ru-RU`);
+		getWeek = (page) => {
+			page = this.checkRequest(page);
+			this.temp = `${this.server}tv/on_the_air?api_key=${apiKey}&language=ru-RU&page=${page}`;
+			currentAPIRequest = this.temp;
+			return this.getData(this.temp);
 		}
 
 		// Не работает https://developers.themoviedb.org/3/tv/get-latest-tv
 		getLatest = () => {
-			return this.getData(`https://api.themoviedb.org/3/tv/latest?api_key=${apiKey}&language=en-En`);
+			return this.getData(`${this.server}tv/latest?api_key=${apiKey}&language=en-En`);
 		}
-
 	}
 
-	//Сделать передачу value в then
 	searchForm.addEventListener('submit', (evt) => {
 		evt.preventDefault();
 		let value = searchFormInput.value.trim();
 		if ( value ) {
-			tvShowList.append(loading);
-			new bdRequest().getSearchResult(value).then(renderCard);
+			new bdRequest().getSearchResult(value).then((response) => renderCard(response, value));
 		}
 	});
+
+	paginationList.addEventListener('click', (evt) => {
+		evt.preventDefault();
+		const target = evt.target;
+		let value = searchFormInput.value.trim();
+		if (target.classList.contains('pagination__link')) {
+			tvShowList.append(loading);
+	
+			if (currentAPIRequest.indexOf('search') !== -1) {
+				new bdRequest().getSearchResult(value, target.textContent ).then(renderCard);
+				return;
+			}
+			if (currentAPIRequest.indexOf('top_rated') !== -1) {
+				new bdRequest().getTopRated(target.textContent).then(renderCard);
+				return;
+			}
+			if (currentAPIRequest.indexOf('popular') !== -1) {
+				new bdRequest().getPopular(target.textContent ).then(renderCard);
+				return;
+			}
+			if (currentAPIRequest.indexOf('airing_today') !== -1) {
+				new bdRequest().getToday(target.textContent ).then(renderCard);
+				return;
+			}
+			if (currentAPIRequest.indexOf('on_the_air') !== -1) {
+				new bdRequest().getWeek(target.textContent ).then(renderCard);
+				return;
+			}
+		}
+		
+		
+	})
 
 	tvShowList.append(loading);
 	new bdRequest().getWeek().then(renderCard);
