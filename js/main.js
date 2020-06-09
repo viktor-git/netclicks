@@ -16,7 +16,8 @@
 	const searchForm= document.querySelector('.search__form');
 	const searchFormInput = document.querySelector('.search__form-input');
 	const searchHeader = document.querySelector('.tv-shows__head'); 
-	const preloader = document.querySelector('.preloader'); 
+	const preloader = document.querySelector('.preloader');
+	const trailer = document.querySelector('.trailer-list') 
 
 	const loading  = document.createElement('div');
 	loading.classList.add('loading');
@@ -138,17 +139,30 @@
 				rating.textContent = response.vote_average;
 				description.textContent = response.overview;
 				modalLink.href = response.homepage;
-			}).finally( () => {
-				preloader.classList.add('visually-hidden');
-			});
+				return response.id;
+			})
+			.then( response => {
+				new bdRequest().getTrailer(response)
+				.then( response => {
+					console.log(response);
+				response.results.forEach( (item) => {
+					const trailerItem = document.createElement('li');
+					trailerItem.innerHTML = `<iframe width="360" height="215" src="https://www.youtube.com/embed/${item.key}" allowfullscreen></iframe>`
 
+					trailer.append(trailerItem );
+				})
+				})
+				.finally( () => {
+					preloader.classList.add('visually-hidden');
+				});
+			});
+				
 			document.body.style.overflow = 'hidden';
 			modalForm.classList.remove('hide');
 			modalForm.style.backgroundColor = 'transparent';
-		}
 
-		modalForm.addEventListener('click', modalCloseHandler);
-		
+			modalForm.addEventListener('click', modalCloseHandler);
+		}
 	});
 
 	const modalCloseHandler = function(evt) {
@@ -275,7 +289,6 @@
 		}
 
 		getTvDetails = (id) => {
-			page = this.checkRequest(page);
 			this.temp = `${this.server}tv/${id}?api_key=${apiKey}&language=ru-RU`;
 			currentAPIRequest = this.temp;
 			return this.getData(this.temp);
@@ -312,6 +325,11 @@
 		// Не работает https://developers.themoviedb.org/3/tv/get-latest-tv
 		getLatest = () => {
 			return this.getData(`${this.server}tv/latest?api_key=${apiKey}&language=en-En`);
+		}
+
+		getTrailer = (id) => {
+
+			return this.getData(`${this.server}tv/${id}/videos?api_key=${apiKey}&language=ru-RU`);
 		}
 	}
 
@@ -357,6 +375,7 @@
 
 	tvShowList.append(loading);
 	new bdRequest().getWeek().then(renderCard);
+
 
 
 }());
